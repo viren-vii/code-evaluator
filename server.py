@@ -10,7 +10,12 @@ from langgraph.graph import START, MessagesState, StateGraph
 from langchain_core.messages.ai import AIMessage
 import time
 import json
+from fastapi.middleware.cors import CORSMiddleware
 
+origins = [
+    "http://localhost",
+    "http://localhost:3000",
+]
 
 # Load the environment variables
 load_dotenv()
@@ -43,13 +48,6 @@ descriptions = {
         An approximate score out of 100 as the quality of the code snippet provided by user. This score should be based on the quality of code snippet and how well it is following the guidelines provided in the question.
     """,
 
-    "result": """
-        - 1
-            Meaning: The given code is better than the previous code snippet in terms of syntax, logic and correctness. This means the user is moving in right direction towards the correct code.
-        - -1
-            Meaning: The given code is worse than the previous code snippet in terms of syntax, logic or correctness. This means the user is moving in wrong direction away from the correct code.
-    """,
-
     "comment": """
         One line comment showing the reason for the given score.
     """
@@ -59,7 +57,6 @@ class Evaluation(BaseModel):
     """Evaluation of the code provided by the user."""
     status: str = Field(description=descriptions["status"])
     score: int = Field(description=descriptions["score"])
-    result: int = Field(description=descriptions["result"])
     comment: str = Field(description=descriptions["comment"])
 
 class ConversationalResponse(BaseModel):
@@ -79,7 +76,6 @@ class AgentState(MessagesState):
 
 def call_model(state: AgentState) -> AgentState:
     response = model_with_structured_output.invoke(state["messages"])
-    print("RESPONSE", response)
     return {
         "messages": state["messages"] + [AIMessage(content=str(response.final_output))],
         "final_output": response
@@ -112,12 +108,13 @@ def get_output(messages: list[BaseMessage]):
     final_output = json.loads(output["final_output"].json())["final_output"]
     if output["messages"]:
         output["messages"][-1].pretty_print()
-        print("FINAL OUTPUT", final_output)
-    return output
+    return {
+        "messages": output["messages"],
+        "final_output": final_output
+    }
 
 def message_parser(messages: list[BaseMessage]):
     parsed_messages = []
-    print(messages)
     for message in messages:
         if message.type == "system":
             parsed_messages.append(SystemMessage(content=message.content))
@@ -132,11 +129,22 @@ app = FastAPI(
   version="1.0",
   description="A Code Ecaluator API server using LangChain's Runnable interfaces",
 )
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 # main api
+class EvaluationInput(BaseModel):
+    messages: list[BaseMessage]
+    user_code_snippet: str
 @app.post("/evaluate/")
-async def evaluate_code(messages: list[BaseMessage], user_code_snippet: str) -> dict:
-    messages.append(HumanMessage(content=user_code_snippet))
+async def evaluate_code(body:EvaluationInput) -> dict:
+    code = body.user_code_snippet
+    messages = message_parser(body.messages)
+    messages.append(HumanMessage(content=code))
     return get_output(messages)
 
 @app.post("/init/")
@@ -151,10 +159,6 @@ class FeedQuestion(BaseModel):
 async def feed_question(body: FeedQuestion):
     question = body.question
     messages = message_parser(body.messages)
-
-    print("QUESTION", question)
-    print("MESSAGES", messages)
-
     question_message = SystemMessage(content=f"Question: {question}")
     return get_output(messages + [question_message])
 
