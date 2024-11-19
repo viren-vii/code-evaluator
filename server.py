@@ -47,11 +47,20 @@ descriptions = {
         """,
 
     "score": """
-        An approximate score out of 100 as the quality of the code snippet provided by user. This score should be based on the quality of code snippet and how well it is following the guidelines provided in the question.
+        An approximate score out of 100 as the quality and correctness of the code snippet provided by user.
+        This score should be based on the quality of code snippet and how well it is following the guidelines provided in the question.
+        Score cannot decrease even if it is incorrect, but it is still going in the right direction.
+        It should decrease strictly only if it is deviating from the right direction.
     """,
 
     "comment": """
         One line comment showing the reason for the given score.
+    """,
+
+    "hint": """
+        One line hint which can be right next step towards the completion of code.
+        Not the final solution.
+        Just a small step as hint in the right direction.
     """
 }
 
@@ -60,6 +69,7 @@ class Evaluation(BaseModel):
     status: str = Field(description=descriptions["status"])
     score: int = Field(description=descriptions["score"])
     comment: str = Field(description=descriptions["comment"])
+    hint: str = Field(description=descriptions["hint"])
 
 class ConversationalResponse(BaseModel):
     """Respond in a conversational manner. Be kind and helpful."""
@@ -100,14 +110,14 @@ def init(thread_id: str):
 You are a python code quality evaluator.
 1. You will receive a question in the next prompt.
 2. Then you will receive code snippets from users periodically. 
-3. You must evaluate the code quality and provide output.
-4. Do not provide solutions, suggestions, or hints.
+3. You must evaluate the code quality, and correctness and provide output.
+4. Do not provide direct solutions.
 """)
     
     return get_output([system_message], thread_id)
     
 def get_output(messages: list[BaseMessage], thread_id: str):
-    config = {"configurable": {"thread_id": thread_id}}
+    config = {"configurable": {"thread_id": thread_id}} 
     output = llmApp.invoke({"messages": messages, "thread_id": thread_id}, config)
     final_output = json.loads(output["final_output"].json())["final_output"]
     if output["messages"]:
@@ -186,4 +196,4 @@ if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="localhost", port=8000)
 
-# uvicorn main:app --reload 
+# uvicorn server:app --reload 
