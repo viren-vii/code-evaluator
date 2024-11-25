@@ -1,1 +1,0 @@
-Write a program to define two function which returns if the number is even or odd. Take a number input from user, and print if the number is even or odd using defined functions.
