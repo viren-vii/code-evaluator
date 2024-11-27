@@ -90,8 +90,4 @@ Messages in the array can be of three types:
   ```
 
 ## Demo video
-
-<video width="640" height="360" controls>
-  <source src="https://github.com/viren-vii/code-evaluator/blob/main/demo.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
+https://github.com/viren-vii/code-evaluator/blob/main/demo.mp4
