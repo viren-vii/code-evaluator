@@ -2,6 +2,8 @@
 
 This is a simple code evaluator that uses a LLM to evaluate the correctness of a code snippet.
 
+https://github.com/user-attachments/assets/caff483f-2052-436a-936e-9885afedf190
+
 ## How to use
 
 1. Clone this repository
@@ -89,7 +91,5 @@ Messages in the array can be of three types:
   }
   ```
 
-## Demo video
-https://github.com/user-attachments/assets/caff483f-2052-436a-936e-9885afedf190
 
 
